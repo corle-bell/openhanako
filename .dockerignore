@@ -55,8 +55,12 @@ node_modules/.cache/
 .DS_Store
 Thumbs.db
 
-# Docker 自身
-docker/
+# Docker 自身（保留 Dockerfile 和 entrypoint.sh 等构建所需文件）
+docker/*
+!docker/Dockerfile
+!docker/entrypoint.sh
+!docker/nginx.conf
+!docker/docker-compose.yml
 
 # vite.config.ts（Electron 构建用，Web 用 vite.config.web.ts）
 vite.config.ts
