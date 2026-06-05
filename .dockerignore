@@ -5,7 +5,6 @@ desktop/preload.cjs
 desktop/main.bundle.cjs
 desktop/preload.bundle.cjs
 desktop/entitlements.mac.plist
-desktop/src/shared/
 
 # 构建脚本（保留 postinstall 需要的脚本）
 scripts/*
