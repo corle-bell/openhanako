@@ -2,6 +2,9 @@
 # 阶段 1: 构建 Web 前端静态文件
 FROM node:22-bookworm-slim AS web-builder
 
+# 构建缓存刷新（修改此值可强制重建后续层）
+ARG CACHE_BUST=1
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -40,6 +43,9 @@ RUN npx vite build --config vite.config.web.ts
 
 # ── 阶段 2: 生产运行镜像 ──
 FROM node:22-bookworm-slim
+
+# 构建缓存刷新（修改此值可强制重建后续层）
+ARG CACHE_BUST=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 make g++ \
