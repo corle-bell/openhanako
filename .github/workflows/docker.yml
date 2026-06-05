@@ -76,5 +76,6 @@ jobs:
             ${{ steps.meta-ghcr.outputs.tags }}
             ${{ steps.meta-dh.outputs.tags }}
           labels: ${{ steps.meta-ghcr.outputs.labels }}
+          # 如果遇到缓存错误，去 Actions → Cache 页面手动删除旧缓存再重试
           cache-from: type=gha
           cache-to: type=gha,mode=max
