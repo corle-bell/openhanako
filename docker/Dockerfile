@@ -34,6 +34,7 @@ COPY desktop/src/locales/ ./desktop/src/locales/
 COPY desktop/src/styles.css ./desktop/src/
 COPY desktop/src/animations.css ./desktop/src/
 COPY desktop/src/icon.png ./desktop/src/
+COPY shared/ ./shared/
 COPY packages/ ./packages/
 COPY vite.config.web.ts ./
 COPY tsconfig.json ./
