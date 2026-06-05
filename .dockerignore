@@ -7,8 +7,9 @@ desktop/preload.bundle.cjs
 desktop/entitlements.mac.plist
 desktop/src/shared/
 
-# 构建脚本
-scripts/
+# 构建脚本（保留 postinstall 需要的脚本）
+scripts/*
+!scripts/patch-pi-sdk.cjs
 
 # 安装器
 build/
