@@ -183,12 +183,19 @@ function headersToRecord(headers: HeadersInit | undefined): Record<string, strin
 export function createLocalServerConnection({
   serverPort,
   serverToken,
+  baseUrl,
 }: {
   serverPort: string | number | null | undefined;
   serverToken?: string | null;
+  baseUrl?: string | null;
 }): ServerConnection | null {
   const port = normalizePort(serverPort);
-  if (!port) return null;
+  if (!port && !baseUrl) return null;
+
+  const effectiveBaseUrl = baseUrl || `http://127.0.0.1:${port}`;
+  const parsed = new URL(effectiveBaseUrl);
+  const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
+  const effectiveWsUrl = `${wsProtocol}//${parsed.host}`;
 
   return {
     connectionId: LOCAL_CONNECTION_ID,
@@ -196,8 +203,8 @@ export function createLocalServerConnection({
     serverId: 'local',
     studioId: 'local',
     label: 'Local Hana',
-    baseUrl: `http://127.0.0.1:${port}`,
-    wsUrl: `ws://127.0.0.1:${port}`,
+    baseUrl: trimTrailingSlash(effectiveBaseUrl),
+    wsUrl: effectiveWsUrl,
     token: normalizeToken(serverToken),
     authState: 'paired',
     trustState: 'local',
@@ -337,12 +344,14 @@ export function refreshLocalServerConnection({
   existingConnection,
   serverPort,
   serverToken,
+  baseUrl,
 }: {
   existingConnection?: ServerConnection | null;
   serverPort: string | number | null | undefined;
   serverToken?: string | null;
+  baseUrl?: string | null;
 }): ServerConnection | null {
-  const nextTransport = createLocalServerConnection({ serverPort, serverToken });
+  const nextTransport = createLocalServerConnection({ serverPort, serverToken, baseUrl });
   if (!nextTransport) return null;
   if (!existingConnection) return nextTransport;
 
@@ -370,7 +379,8 @@ export function refreshLocalServerConnectionState({
   activeServerConnection,
   serverPort,
   serverToken,
-}: ServerConnectionSource): {
+  baseUrl,
+}: ServerConnectionSource & { baseUrl?: string | null }): {
   serverConnections: ServerConnectionRegistry;
   activeServerConnectionId: string | null;
   activeServerConnection: ServerConnection | null;
@@ -385,6 +395,7 @@ export function refreshLocalServerConnectionState({
     existingConnection: existingLocal,
     serverPort,
     serverToken,
+    baseUrl,
   });
   let nextRegistry = existingRegistry;
   if (localConnection) {

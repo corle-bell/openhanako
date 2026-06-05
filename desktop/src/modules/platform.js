@@ -16,9 +16,13 @@
   // Web / 非 Electron 环境 — HTTP fallback
   const params = new URLSearchParams(location.search);
   const devWeb = normalizeDevWebConfig(window.__HANA_DEV_WEB__);
+  const prodWeb = normalizeDevWebConfig(window.__HANA_WEB_CONFIG__);
+  // 优先使用 devWeb（开发模式），其次 prodWeb（生产构建），否则用当前 origin
+  const hasDevWeb = !!(devWeb.serverPort || devWeb.apiBaseUrl);
+  const webConfig = hasDevWeb ? devWeb : (prodWeb.serverPort || prodWeb.apiBaseUrl ? prodWeb : { serverPort: "", apiBaseUrl: "" });
   const token = params.get("token") || localStorage.getItem("hana-token") || "";
-  const baseUrl = devWeb.apiBaseUrl || `${location.protocol}//${location.host}`;
-  const serverPort = devWeb.serverPort || safePortFromBaseUrl(baseUrl) || location.port || "3000";
+  const baseUrl = webConfig.apiBaseUrl || `${location.protocol}//${location.host}`;
+  const serverPort = webConfig.serverPort || safePortFromBaseUrl(baseUrl) || location.port || "3000";
 
   function normalizeDevWebConfig(value) {
     if (!value || typeof value !== "object") {

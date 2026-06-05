@@ -161,8 +161,13 @@ function ViewerApp() {
   );
 }
 
-// Mount
-const rootEl = document.getElementById('react-root');
-if (rootEl) {
-  createRoot(rootEl).render(<ViewerApp />);
+// Mount（仅在 Electron 环境下自动 mount，Web SPA 由 WebApp.tsx 控制）
+const isElectron = typeof window !== 'undefined' && !!(window as any).hana;
+if (isElectron) {
+  const rootEl = document.getElementById('react-root');
+  if (rootEl) {
+    createRoot(rootEl).render(<ViewerApp />);
+  }
 }
+
+export { ViewerApp };

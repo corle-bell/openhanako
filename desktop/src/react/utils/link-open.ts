@@ -120,8 +120,8 @@ function normalizeWebUrl(href: string): string | null {
 }
 
 function hasDesktopBrowserViewer(): boolean {
-  return typeof document === 'undefined'
-    || document.documentElement.getAttribute('data-platform') !== 'web';
+  if (typeof document === 'undefined') return true;
+  return document.documentElement.getAttribute('data-platform') !== 'web';
 }
 
 export function resolveLinkTarget(href: string, context: LinkOpenContext = {}): LinkTarget {

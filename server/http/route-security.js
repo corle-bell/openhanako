@@ -183,7 +183,8 @@ export function scopeAllows(scopes, required) {
 function isMobileStaticRoute(verb, routePath) {
   if (verb !== "GET" && verb !== "HEAD") return false;
   return isWebClientStaticRoute(routePath, "/mobile")
-    || isWebClientStaticRoute(routePath, "/desktop");
+    || isWebClientStaticRoute(routePath, "/desktop")
+    || isWebClientStaticRoute(routePath, "/web");
 }
 
 function isWebClientStaticRoute(routePath, prefix) {
@@ -193,8 +194,11 @@ function isWebClientStaticRoute(routePath, prefix) {
     || routePath === `${prefix}/manifest.webmanifest`
     || routePath === `${prefix}/sw.js`
     || routePath === `${prefix}/icon.png`
+    || routePath === `${prefix}/styles.css`
+    || routePath === `${prefix}/animations.css`
     || routePath.startsWith(`${prefix}/assets/`)
     || routePath.startsWith(`${prefix}/lib/`)
+    || routePath.startsWith(`${prefix}/modules/`)
     || routePath.startsWith(`${prefix}/themes/`)
     || routePath.startsWith(`${prefix}/locales/`)
     || routePath.startsWith(`${prefix}/icons/`);

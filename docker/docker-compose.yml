@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  hanako:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: hanako
+    ports:
+      - "14500:14500"
+    volumes:
+      # 持久化数据（数据库、配置、会话、插件等）
+      - hanako_data:/data
+      # 可选：挂载本地目录供 Agent 访问文件
+      # - /path/to/your/files:/workspace:ro
+    environment:
+      - HANA_PORT=14500
+      - HANA_HOST=0.0.0.0
+      # 设置 CORS 来源（部署到公网时必须设置具体域名）
+      # - HANA_CORS_ORIGIN=https://your-domain.com
+      # 预置 token（不设置则自动生成，通过 docker logs 查看）
+      # - HANA_TOKEN=your-secure-token-here
+    restart: unless-stopped
+    # 资源限制（可选）
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 4g
+    #       cpus: "2"
+
+  # 可选：Nginx 反向代理（HTTPS + 静态文件）
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: hanako-nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - ./ssl:/etc/nginx/ssl:ro
+  #   depends_on:
+  #     - hanako
+
+volumes:
+  hanako_data:
+    driver: local

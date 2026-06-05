@@ -1,4 +1,8 @@
 (function installConnectionCsp() {
+  // 仅在 Electron 环境（window.hana 存在）时执行 CSP 注入。
+  // Web 环境由 Vite 构建时通过 meta tag 注入 CSP，无需运行时 document.write。
+  if (!window.hana) return;
+
   var STORAGE_KEY = "hana-server-connections-v1";
   var BASE_CSP = {
     "default-src": ["'self'"],

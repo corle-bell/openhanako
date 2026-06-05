@@ -44,10 +44,12 @@ export function getWebSocket(): WebSocket | null {
 export function connectWebSocket(port?: string, token?: string): void {
   // 如果没有传参，从 Zustand store 获取
   const storeState = useStore.getState();
+  const isWeb = typeof window !== 'undefined' && !window.hana;
   const connection = port !== undefined || token !== undefined
     ? createLocalServerConnection({
         serverPort: port || storeState.serverPort,
         serverToken: token ?? storeState.serverToken,
+        baseUrl: isWeb ? window.location.origin : undefined,
       })
     : resolveServerConnection(storeState);
 

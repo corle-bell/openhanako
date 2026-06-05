@@ -24,6 +24,12 @@ declare global {
       apiBaseUrl?: string;
     };
 
+    // ── Web 生产环境配置（vite.config.web.ts 构建时注入） ──
+    __HANA_WEB_CONFIG__?: {
+      serverPort?: string | number;
+      apiBaseUrl?: string;
+    };
+
     // ── 主题（由 lib/theme.js IIFE bundle 注入） ──
     setTheme: (name: string) => void;
     // applyTheme 为 optional：ws-message-handler 运行在所有窗口中，包括不加载

@@ -1020,6 +1020,7 @@ export class SessionCoordinator {
     // Apply tool snapshot (Case A / Case C). Permission mode is a runtime
     // policy and does not change the stable tool schema.
     if (snapshotToolNames !== null) {
+      // snapshotToolNames applied below
       session.setActiveToolsByName(snapshotToolNames);
     }
 

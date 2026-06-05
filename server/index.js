@@ -68,6 +68,7 @@ import { createUsageRoute } from "./routes/usage.js";
 import { createWebAuthRoute } from "./routes/web-auth.js";
 import { createMobileWorkbenchRoute } from "./routes/mobile-workbench.js";
 import { createMobileStaticRoute } from "./routes/mobile-static.js";
+import { createWebStaticRoute } from "./routes/web-static.js";
 import { createHtmlPreviewRoute } from "./routes/html-preview.js";
 import { createAccessRoute } from "./routes/access.js";
 import { createSpeechRecognitionRoute } from "./routes/speech-recognition.js";
@@ -647,6 +648,7 @@ const bridgeManagerRef = {
 
 const { restRoute: chatRestRoute, wsRoute: chatWsRoute } = createChatRoute(engine, hub, { upgradeWebSocket });
 app.route("", createMobileStaticRoute({ distDir: fromRoot("desktop", "dist-renderer") }));
+app.route("", createWebStaticRoute({ distDir: fromRoot("dist-web") }));
 app.route("", createHtmlPreviewRoute());
 app.route("/api", chatRestRoute);
 app.route("", chatWsRoute);

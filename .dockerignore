@@ -1,0 +1,65 @@
+# Electron 桌面端（Docker 不需要的 Electron 特定文件）
+desktop/main.cjs
+desktop/bootstrap.cjs
+desktop/preload.cjs
+desktop/main.bundle.cjs
+desktop/preload.bundle.cjs
+desktop/entitlements.mac.plist
+desktop/src/shared/
+
+# 构建脚本
+scripts/
+
+# 安装器
+build/
+vendor/
+
+# 构建产物（非 Web）
+dist/
+dist-server/
+dist-renderer/
+dist-computer-use/
+dist-sandbox/
+
+# 测试
+tests/
+examples/
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.test.js
+
+# 文档
+.docs/
+*.md
+!README.md
+
+# 开发工具
+.eslintrc*
+.eslintignore
+.prettierrc*
+.editorconfig
+.npmrc
+.git/
+.gitignore
+.github/
+node_modules/.cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Docker 自身
+docker/
+
+# vite.config.ts（Electron 构建用，Web 用 vite.config.web.ts）
+vite.config.ts
+vite.config.theme.js
+vite.config.preload.js
+vite.config.main.js

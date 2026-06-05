@@ -117,7 +117,10 @@ export async function initApp(): Promise<void> {
   // 1. 获取 server 连接信息并存入 Zustand
   const serverPort = await platform.getServerPort();
   const serverToken = await platform.getServerToken();
-  const localServerConnection = createLocalServerConnection({ serverPort, serverToken });
+  // Web 环境：使用当前页面的 origin 作为 baseUrl，而非 127.0.0.1
+  const isWeb = !window.hana;
+  const webBaseUrl = isWeb ? window.location.origin : undefined;
+  const localServerConnection = createLocalServerConnection({ serverPort, serverToken, baseUrl: webBaseUrl });
   const persistedConnections = readPersistedServerConnectionState();
   const initialRegistry = localServerConnection
     ? upsertServerConnection(persistedConnections.serverConnections, localServerConnection)

@@ -87,17 +87,30 @@ export function OnboardingApp({ preview, skipToTutorial }: OnboardingAppProps) {
     persistServerConnectionSelection(connection);
     setServerConnection(connection);
     if (!preview) {
-      await window.hana.onboardingComplete?.();
+      const api = window.hana || window.platform;
+      await api?.onboardingComplete?.();
     }
   }, [preview]);
 
   useEffect(() => {
     (async () => {
       try {
-        const port = await window.hana.getServerPort();
-        const token = await window.hana.getServerToken();
-        setServerConnection(createLocalServerConnection({ serverPort: port, serverToken: token }));
-        const splashInfo = await window.hana.getSplashInfo?.();
+        // Web 环境使用 window.platform，Electron 使用 window.hana
+        const hanaApi = window.hana || window.platform;
+        if (!hanaApi) {
+          console.error('[onboarding] No platform API available');
+          setI18nReady(true);
+          return;
+        }
+        const port = await hanaApi.getServerPort();
+        const token = await hanaApi.getServerToken();
+        const isWeb = !window.hana;
+        setServerConnection(createLocalServerConnection({
+          serverPort: port,
+          serverToken: token,
+          baseUrl: isWeb ? window.location.origin : undefined,
+        }));
+        const splashInfo = await hanaApi.getSplashInfo?.();
         const loc = splashInfo?.locale || 'zh-CN';
         const name = splashInfo?.agentName || 'Hanako';
         setLocale(loc);
@@ -106,7 +119,7 @@ export function OnboardingApp({ preview, skipToTutorial }: OnboardingAppProps) {
         i18n.defaultName = name;
         setI18nReady(true);
         try {
-          const localPath = await window.hana.getAvatarPath?.('agent');
+          const localPath = await hanaApi.getAvatarPath?.('agent');
           if (localPath) setAvatarSrc(window.platform?.getFileUrl?.(localPath) ?? '');
         } catch { /* ignore */ }
       } catch (err) {
