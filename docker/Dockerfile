@@ -78,6 +78,9 @@ COPY skills2set/ ./skills2set/
 COPY cli/ ./cli/
 COPY packages/ ./packages/
 
+# 复制 server 端依赖的 desktop 共享模块（theme-registry 等）
+COPY desktop/src/shared/ ./desktop/src/shared/
+
 # 从构建阶段复制 Web 前端产物
 COPY --from=web-builder /app/dist-web/ ./dist-web/
 
