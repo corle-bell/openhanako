@@ -16,7 +16,7 @@ COPY packages/plugin-runtime/package.json packages/plugin-runtime/
 COPY packages/plugin-components/package.json packages/plugin-components/
 
 # 安装全部依赖（dev 依赖用于 Vite 构建）
-RUN npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund --install-strategy=hoisted
 
 # 复制前端源码和构建配置
 COPY desktop/src/ ./desktop/src/
@@ -53,7 +53,7 @@ COPY packages/plugin-runtime/package.json packages/plugin-runtime/
 COPY packages/plugin-components/package.json packages/plugin-components/
 
 # 安装生产依赖（better-sqlite3 等原生模块会在此编译）
-RUN npm install --omit=dev --no-audit --no-fund
+RUN npm install --omit=dev --no-audit --no-fund --install-strategy=hoisted
 
 # 复制 server 源码和运行时依赖
 COPY core/ ./core/
