@@ -9,14 +9,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 复制依赖清单（利用层缓存）
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY packages/plugin-protocol/package.json packages/plugin-protocol/
 COPY packages/plugin-sdk/package.json packages/plugin-sdk/
 COPY packages/plugin-runtime/package.json packages/plugin-runtime/
 COPY packages/plugin-components/package.json packages/plugin-components/
 
-# 安装全部依赖（dev 依赖用于 Vite 构建）
-RUN npm install --no-audit --no-fund
+# 不使用 package-lock.json（避免跨平台 lockfile 冲突）
+RUN npm install --no-audit --no-fund --package-lock=false
 
 # 复制前端源码和构建配置
 COPY desktop/src/ ./desktop/src/
@@ -46,14 +46,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 复制依赖清单
-COPY package.json package-lock.json ./
+COPY package.json ./
 COPY packages/plugin-protocol/package.json packages/plugin-protocol/
 COPY packages/plugin-sdk/package.json packages/plugin-sdk/
 COPY packages/plugin-runtime/package.json packages/plugin-runtime/
 COPY packages/plugin-components/package.json packages/plugin-components/
 
-# 先全量安装，再清理 dev 依赖（比 omit=dev 更稳定，避免 workspace 解析问题）
-RUN npm install --no-audit --no-fund && npm prune --omit=dev
+# 不使用 package-lock.json（避免跨平台 lockfile 冲突）
+RUN npm install --no-audit --no-fund --package-lock=false && npm prune --omit=dev
 
 # 复制 server 源码和运行时依赖
 COPY core/ ./core/
