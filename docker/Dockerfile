@@ -14,6 +14,8 @@ COPY packages/plugin-protocol/package.json packages/plugin-protocol/
 COPY packages/plugin-sdk/package.json packages/plugin-sdk/
 COPY packages/plugin-runtime/package.json packages/plugin-runtime/
 COPY packages/plugin-components/package.json packages/plugin-components/
+# postinstall 脚本需要此文件
+COPY scripts/patch-pi-sdk.cjs scripts/patch-pi-sdk.cjs
 
 # 不使用 package-lock.json（避免跨平台 lockfile 冲突）
 RUN npm install --no-audit --no-fund --package-lock=false
@@ -51,6 +53,8 @@ COPY packages/plugin-protocol/package.json packages/plugin-protocol/
 COPY packages/plugin-sdk/package.json packages/plugin-sdk/
 COPY packages/plugin-runtime/package.json packages/plugin-runtime/
 COPY packages/plugin-components/package.json packages/plugin-components/
+# postinstall 脚本需要此文件
+COPY scripts/patch-pi-sdk.cjs scripts/patch-pi-sdk.cjs
 
 # 不使用 package-lock.json（避免跨平台 lockfile 冲突）
 RUN npm install --no-audit --no-fund --package-lock=false && npm prune --omit=dev
