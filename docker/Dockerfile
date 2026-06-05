@@ -35,6 +35,7 @@ COPY desktop/src/styles.css ./desktop/src/
 COPY desktop/src/animations.css ./desktop/src/
 COPY desktop/src/icon.png ./desktop/src/
 COPY shared/ ./shared/
+COPY lib/ ./lib/
 COPY packages/ ./packages/
 COPY vite.config.web.ts ./
 COPY tsconfig.json ./
