@@ -61,29 +61,29 @@ export function createServerAuthService({
     }
 
     if (parsed.token === loopbackToken) {
-      if (connectionKind !== "local") {
-        // Loopback token 在非本地连接时不可用，fallback 到 cookie
-        const webPrincipal = authenticateWebSession(hanakoHome, cookieHeader, { now });
-        if (!webPrincipal) {
-          return denyAuth("loopback_token_requires_local_transport", {
-            credentialSource: parsed.source,
-            connectionKind,
-          });
-        }
-        if (!principalAllowsConnection(webPrincipal, connectionKind)) {
-          return denyAuth("connection_not_allowed", {
-            credentialSource: "cookie",
-            connectionKind,
-          });
-        }
-        return allowAuth(normalizePrincipal({
-          ...webPrincipal,
-          connectionKind: connectionKind === "local"
-            ? (webPrincipal.connectionKind || connectionKind)
-            : connectionKind,
-        }));
+      // Loopback token 在 local 和 lan 模式下都可用；
+      // lan 模式用于 Docker/局域网部署（token 通过 __HANA_WEB_CONFIG__ 安全注入到页面 HTML）
+      if (connectionKind === "local" || connectionKind === "lan") {
+        return allowAuth(createLocalPrincipal(resolveRuntimeContext()));
       }
-      return allowAuth(createLocalPrincipal(resolveRuntimeContext()));
+      // 非 local/lan 模式（如 custom_remote），fallback 到 cookie
+      const webPrincipal = authenticateWebSession(hanakoHome, cookieHeader, { now });
+      if (!webPrincipal) {
+        return denyAuth("loopback_token_requires_local_transport", {
+          credentialSource: parsed.source,
+          connectionKind,
+        });
+      }
+      if (!principalAllowsConnection(webPrincipal, connectionKind)) {
+        return denyAuth("connection_not_allowed", {
+          credentialSource: "cookie",
+          connectionKind,
+        });
+      }
+      return allowAuth(normalizePrincipal({
+        ...webPrincipal,
+        connectionKind,
+      }));
     }
 
     const devicePrincipal = authenticateDeviceCredential(hanakoHome, parsed.token, { now });

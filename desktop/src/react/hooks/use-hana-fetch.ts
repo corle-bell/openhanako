@@ -46,11 +46,14 @@ export async function hanaFetch(
     else callerSignal.addEventListener('abort', () => controller.abort(), { once: true });
   }
 
+  // Web 环境需要 credentials: 'include' 才能发送 cookie（session 认证）
+  const isWeb = typeof window !== 'undefined' && !window.hana;
   try {
     const res = await fetch(buildConnectionUrl(connection, path), {
       ...fetchOpts,
       headers,
       signal: controller.signal,
+      ...(isWeb && fetchOpts.credentials === undefined ? { credentials: 'include' } : {}),
     });
     if (throwOnHttpError && !res.ok) {
       throw new Error(`hanaFetch ${path}: ${res.status} ${res.statusText}`);
