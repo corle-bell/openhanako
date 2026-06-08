@@ -21,7 +21,12 @@
   const hasDevWeb = !!(devWeb.serverPort || devWeb.apiBaseUrl);
   const webConfig = hasDevWeb ? devWeb : (prodWeb.serverPort || prodWeb.apiBaseUrl ? prodWeb : { serverPort: "", apiBaseUrl: "" });
   const token = params.get("token") || localStorage.getItem("hana-token") || "";
-  const baseUrl = webConfig.apiBaseUrl || `${location.protocol}//${location.host}`;
+  // Web 环境：强制使用 window.location.origin 作为 baseUrl，
+  // 避免反向代理的 Host 头不正确导致 API 请求发到错误地址（如 127.0.0.1）
+  const isWeb = typeof window !== 'undefined' && !window.hana;
+  const baseUrl = isWeb
+    ? window.location.origin
+    : (webConfig.apiBaseUrl || `${location.protocol}//${location.host}`);
   const serverPort = webConfig.serverPort || safePortFromBaseUrl(baseUrl) || location.port || "3000";
 
   function normalizeDevWebConfig(value) {
