@@ -233,7 +233,8 @@ function copyLegacyFiles(): Plugin {
     name: 'hana-web-copy-legacy-files',
     closeBundle() {
       const srcDir = path.resolve(__dirname, 'desktop/src');
-      const outDir = path.resolve(__dirname, 'dist-web');
+      // Vite root=desktop/src, outDir=../dist-web → 实际输出 desktop/dist-web/
+      const outDir = path.resolve(__dirname, 'desktop/dist-web');
 
       const dirs = ['lib', 'modules', 'themes', 'assets', 'locales'];
       const files = ['styles.css', 'animations.css', 'icon.png'];

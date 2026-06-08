@@ -74,21 +74,33 @@ function serveWebIndex(c, distDir, serverToken) {
   // 生成 nonce 用于 CSP
   const nonce = crypto.randomUUID();
 
-  // 注入 __HANA_WEB_CONFIG__（使用 nonce 兼容 CSP）
+  // 给所有内联 <script>（无 src 属性）添加 nonce，使其兼容 CSP
+  // Vite 构建时 injectWebConfig 插件已注入 __HANA_WEB_CONFIG__ 脚本但没有 nonce
+  html = html.replace(
+    /<script(?![^>]*\ssrc=)([^>]*)>/g,
+    (match, attrs) => {
+      // 如果已有 nonce 属性则跳过
+      if (/\snonce=/.test(match)) return match;
+      return `<script nonce="${nonce}"${attrs}>`;
+    }
+  );
+
+  // 注入 token 到已有的 __HANA_WEB_CONFIG__ 对象
+  // Vite 构建时 injectWebConfig 插件已生成 __HANA_WEB_CONFIG__，这里只追加 token
   if (serverToken) {
-    const configScript = `<script nonce="${nonce}">window.__HANA_WEB_CONFIG__={apiBaseUrl:${JSON.stringify(apiBaseUrl)},token:${JSON.stringify(serverToken)}};</script>`;
-    html = html.replace("</head>", `${configScript}\n</head>`);
+    const tokenScript = `<script nonce="${nonce}">window.__HANA_WEB_CONFIG__=Object.assign(window.__HANA_WEB_CONFIG__||{},{token:${JSON.stringify(serverToken)}});</script>`;
+    html = html.replace("</head>", `${tokenScript}\n</head>`);
   }
 
-  // 修改 CSP meta tag 允许 nonce + unsafe-inline（兼容旧浏览器）+ inline 样式
+  // 修改 CSP meta tag 添加 nonce 支持
   html = html.replace(
     /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]*)"\s*\/?>/,
     (_, cspContent) => {
       let newCsp = cspContent;
-      // 替换 script-src 以支持 nonce 和 unsafe-inline
+      // 替换 script-src 以支持 nonce
       newCsp = newCsp.replace(
         /script-src\s+'self'/,
-        `script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`
+        `script-src 'self' 'nonce-${nonce}'`
       );
       // 允许内联样式（UI 主题需要）
       newCsp = newCsp.replace(
