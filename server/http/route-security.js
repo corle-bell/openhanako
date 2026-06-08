@@ -182,11 +182,29 @@ export function scopeAllows(scopes, required) {
 
 function isMobileStaticRoute(verb, routePath) {
   if (verb !== "GET" && verb !== "HEAD") return false;
-  // 根路径 / 允许作为 Web 入口（重定向或 serve index）
+  // 根路径 / 作为 Web 入口，直接 serve index.html
   if (routePath === "/") return true;
+  // 根路径下的 Web 静态资源（index.html 使用相对路径，由 <base href="/"> 解析）
+  if (isWebRootStaticRoute(routePath)) return true;
   return isWebClientStaticRoute(routePath, "/mobile")
     || isWebClientStaticRoute(routePath, "/desktop")
     || isWebClientStaticRoute(routePath, "/web");
+}
+
+/**
+ * Web 根路径下的静态资源（用于 / 直接 serve index.html 的场景）
+ */
+function isWebRootStaticRoute(routePath) {
+  return routePath === "/favicon.ico"
+    || routePath === "/styles.css"
+    || routePath === "/animations.css"
+    || routePath === "/icon.png"
+    || routePath.startsWith("/assets/")
+    || routePath.startsWith("/lib/")
+    || routePath.startsWith("/modules/")
+    || routePath.startsWith("/themes/")
+    || routePath.startsWith("/locales/")
+    || routePath.startsWith("/icons/");
 }
 
 function isWebClientStaticRoute(routePath, prefix) {

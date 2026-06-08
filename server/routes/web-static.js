@@ -10,6 +10,7 @@
  */
 import fs from "fs";
 import path from "path";
+import crypto from "crypto";
 import { Hono } from "hono";
 import { guessMime } from "../http/file-content.js";
 
@@ -20,14 +21,27 @@ export function createWebStaticRoute({ distDir, serverToken } = {}) {
   if (!distDir) throw new Error("distDir required");
   const route = new Hono();
 
-  // 根路径重定向到 /web
-  route.get("/", (c) => c.redirect("/web"));
-  route.get("/web", (c) => serveWebIndex(c, distDir, serverToken));
-  route.get("/web/", (c) => serveWebIndex(c, distDir, serverToken));
+  // / 和 /web 都 serve index.html（/ 方便直接访问）
+  route.get("/", (c) => serveWebIndex(c, distDir, serverToken));
+  // 根路径下的静态资源（index.html 使用相对路径，由 <base href="/"> 解析到根）
+  route.get("/favicon.ico", (c) => serveWebStaticFile(c, distDir, "icon.png"));
+  route.get("/styles.css", (c) => serveWebStaticFile(c, distDir, "styles.css"));
+  route.get("/animations.css", (c) => serveWebStaticFile(c, distDir, "animations.css"));
+  route.get("/icon.png", (c) => serveWebStaticFile(c, distDir, "icon.png"));
+  route.get("/assets/*", (c) => serveWebStaticFile(c, distDir, c.req.path.slice(1)));
+  route.get("/lib/*", (c) => serveWebStaticFile(c, distDir, c.req.path.slice(1)));
+  route.get("/modules/*", (c) => serveWebStaticFile(c, distDir, c.req.path.slice(1)));
+  route.get("/themes/*", (c) => serveWebStaticFile(c, distDir, c.req.path.slice(1)));
+  route.get("/locales/*", (c) => serveWebStaticFile(c, distDir, c.req.path.slice(1)));
+  route.get("/icons/*", (c) => serveWebStaticFile(c, distDir, c.req.path.slice(1)));
+  // /web/* 保留兼容（重定向到根路径的等效资源）
+  route.get("/web", (c) => c.redirect("/"));
+  route.get("/web/", (c) => c.redirect("/"));
   route.get("/web/*", (c) => {
-    const pattern = new RegExp(`^/web/?`);
-    const subPath = c.req.path.replace(pattern, "");
-    // 尝试匹配静态文件，失败时 fallback 到 index.html（SPA）
+    const subPath = c.req.path.replace(/^\/web\/?/, "") || "";
+    if (!subPath.includes(".")) {
+      return serveWebIndex(c, distDir, serverToken);
+    }
     const result = serveWebStaticFile(c, distDir, subPath);
     if (result) return result;
     return serveWebIndex(c, distDir, serverToken);
@@ -54,11 +68,36 @@ function serveWebIndex(c, distDir, serverToken) {
   // 替换占位符
   html = html.replace(new RegExp(escapeRegExp(PLACEHOLDER), "g"), apiBaseUrl);
 
-  // 注入 __HANA_WEB_CONFIG__（包含 token，使前端可自动认证）
+  // 注入 <base href="/"> 确保所有相对路径从根解析
+  html = html.replace("<head>", '<head>\n    <base href="/">');
+
+  // 生成 nonce 用于 CSP
+  const nonce = crypto.randomUUID();
+
+  // 注入 __HANA_WEB_CONFIG__（使用 nonce 兼容 CSP）
   if (serverToken) {
-    const configScript = `<script>window.__HANA_WEB_CONFIG__={apiBaseUrl:${JSON.stringify(apiBaseUrl)},token:${JSON.stringify(serverToken)}};</script>`;
+    const configScript = `<script nonce="${nonce}">window.__HANA_WEB_CONFIG__={apiBaseUrl:${JSON.stringify(apiBaseUrl)},token:${JSON.stringify(serverToken)}};</script>`;
     html = html.replace("</head>", `${configScript}\n</head>`);
   }
+
+  // 修改 CSP meta tag 允许 nonce + unsafe-inline（兼容旧浏览器）+ inline 样式
+  html = html.replace(
+    /<meta\s+http-equiv="Content-Security-Policy"\s+content="([^"]*)"\s*\/?>/,
+    (_, cspContent) => {
+      let newCsp = cspContent;
+      // 替换 script-src 以支持 nonce 和 unsafe-inline
+      newCsp = newCsp.replace(
+        /script-src\s+'self'/,
+        `script-src 'self' 'nonce-${nonce}' 'unsafe-inline'`
+      );
+      // 允许内联样式（UI 主题需要）
+      newCsp = newCsp.replace(
+        /style-src\s+'self'/,
+        `style-src 'self' 'unsafe-inline'`
+      );
+      return `<meta http-equiv="Content-Security-Policy" content="${newCsp}">`;
+    }
+  );
 
   c.header("Content-Type", "text/html; charset=utf-8");
   c.header("Cache-Control", "no-cache");
