@@ -20,6 +20,8 @@ export function createWebStaticRoute({ distDir, serverToken } = {}) {
   if (!distDir) throw new Error("distDir required");
   const route = new Hono();
 
+  // 根路径重定向到 /web
+  route.get("/", (c) => c.redirect("/web"));
   route.get("/web", (c) => serveWebIndex(c, distDir, serverToken));
   route.get("/web/", (c) => serveWebIndex(c, distDir, serverToken));
   route.get("/web/*", (c) => {

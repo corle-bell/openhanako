@@ -182,6 +182,8 @@ export function scopeAllows(scopes, required) {
 
 function isMobileStaticRoute(verb, routePath) {
   if (verb !== "GET" && verb !== "HEAD") return false;
+  // 根路径 / 允许作为 Web 入口（重定向或 serve index）
+  if (routePath === "/") return true;
   return isWebClientStaticRoute(routePath, "/mobile")
     || isWebClientStaticRoute(routePath, "/desktop")
     || isWebClientStaticRoute(routePath, "/web");
