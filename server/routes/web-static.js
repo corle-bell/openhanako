@@ -112,7 +112,8 @@ function serveWebIndex(c, distDir, serverToken) {
   );
 
   c.header("Content-Type", "text/html; charset=utf-8");
-  c.header("Cache-Control", "no-cache");
+  // no-store 避免浏览器缓存旧版 index.html（其中可能包含错误的 apiBaseUrl）
+  c.header("Cache-Control", "no-store");
   return c.body(html);
 }
 
