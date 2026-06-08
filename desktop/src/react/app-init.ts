@@ -128,7 +128,11 @@ export async function initApp(): Promise<void> {
   const requestedActiveConnection = persistedConnections.activeServerConnectionId
     ? initialRegistry[persistedConnections.activeServerConnectionId]
     : null;
-  const activeServerConnection = requestedActiveConnection || localServerConnection;
+  // Web 环境：强制使用 localServerConnection（基于 window.location.origin），
+  // 忽略持久化连接中的 activeServerConnectionId，避免旧的 127.0.0.1 连接覆盖正确的地址
+  const activeServerConnection = isWeb
+    ? (localServerConnection || requestedActiveConnection)
+    : (requestedActiveConnection || localServerConnection);
   useStore.setState({
     serverPort,
     serverToken,
