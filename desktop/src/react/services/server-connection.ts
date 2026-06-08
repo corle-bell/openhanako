@@ -197,9 +197,15 @@ export function createLocalServerConnection({
   const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
   const effectiveWsUrl = `${wsProtocol}//${parsed.host}`;
 
+  // 非 loopback 地址（如通过公网 IP / 域名访问 Web UI）自动转为 lan 模式
+  const isLocal = isLoopbackHost(parsed.hostname);
+  const kind: StudioConnectionKind = isLocal ? 'local' : 'lan';
+  const trustState: ServerTrustState = isLocal ? 'local' : 'lan';
+  const credentialKind: ConnectionCredentialKind = isLocal ? 'loopback_token' : 'device_credential';
+
   return {
     connectionId: LOCAL_CONNECTION_ID,
-    kind: 'local',
+    kind,
     serverId: 'local',
     studioId: 'local',
     label: 'Local Hana',
@@ -207,8 +213,8 @@ export function createLocalServerConnection({
     wsUrl: effectiveWsUrl,
     token: normalizeToken(serverToken),
     authState: 'paired',
-    trustState: 'local',
-    credentialKind: 'loopback_token',
+    trustState,
+    credentialKind,
     platformAccountId: null,
     officialServiceKind: null,
     capabilities: [...LOCAL_CAPABILITIES],
@@ -358,13 +364,13 @@ export function refreshLocalServerConnection({
   return {
     ...existingConnection,
     connectionId: LOCAL_CONNECTION_ID,
-    kind: 'local',
+    kind: nextTransport.kind,
     baseUrl: nextTransport.baseUrl,
     wsUrl: nextTransport.wsUrl,
     token: nextTransport.token,
     authState: 'paired',
-    trustState: 'local',
-    credentialKind: 'loopback_token',
+    trustState: nextTransport.trustState,
+    credentialKind: nextTransport.credentialKind,
     platformAccountId: null,
     officialServiceKind: null,
     capabilities: existingConnection.capabilities.length
@@ -498,6 +504,14 @@ function isLoopbackHost(hostname: string): boolean {
   return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '[::1]';
 }
 
+function safeUrlHostname(url: string): string {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return 'localhost';
+  }
+}
+
 export function resolveServerConnection(source: ServerConnectionSource): ServerConnection | null {
   if (source.activeServerConnectionId) {
     const registryConnection = source.serverConnections?.[source.activeServerConnectionId];
@@ -609,9 +623,15 @@ export function mergeServerIdentity(
     ...(identity.serverNodeTransport !== undefined ? { serverNodeTransport: identity.serverNodeTransport } : {}),
     ...(identity.executionBoundary !== undefined ? { executionBoundary: identity.executionBoundary } : {}),
   };
+  // 根据实际 baseUrl hostname 规范化 kind，防止 server 返回 "local" 但实际非 loopback 时校验失败
+  const hostname = safeUrlHostname(connection.baseUrl);
+  const rawKind = identity.connectionKind || connection.kind;
+  const kind = normalizeBrowserConnectionKind(rawKind, hostname);
+  const trustState = normalizeBrowserTrustState(identity.trustState || connection.trustState, kind);
+  const credentialKind = normalizeBrowserCredentialKind(identity.credentialKind || connection.credentialKind, kind);
   const next = {
     ...connection,
-    kind: identity.connectionKind || connection.kind,
+    kind,
     serverId: identity.serverId,
     ...nodeScope,
     userId: identity.userId,
@@ -621,8 +641,8 @@ export function mergeServerIdentity(
     studioLabel: identity.studioLabel,
     serverVersion: identity.version,
     authState: identity.authState || connection.authState,
-    trustState: identity.trustState || connection.trustState,
-    credentialKind: identity.credentialKind || connection.credentialKind,
+    trustState,
+    credentialKind,
     platformAccountId: identity.platformAccountId ?? connection.platformAccountId ?? null,
     officialServiceKind: identity.officialServiceKind ?? connection.officialServiceKind ?? null,
     capabilities: identity.capabilities ? [...identity.capabilities] : [...connection.capabilities],
