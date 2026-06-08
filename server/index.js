@@ -648,7 +648,7 @@ const bridgeManagerRef = {
 
 const { restRoute: chatRestRoute, wsRoute: chatWsRoute } = createChatRoute(engine, hub, { upgradeWebSocket });
 app.route("", createMobileStaticRoute({ distDir: fromRoot("desktop", "dist-renderer") }));
-app.route("", createWebStaticRoute({ distDir: fromRoot("dist-web") }));
+app.route("", createWebStaticRoute({ distDir: fromRoot("dist-web"), serverToken: SERVER_TOKEN }));
 app.route("", createHtmlPreviewRoute());
 app.route("/api", chatRestRoute);
 app.route("", chatWsRoute);

@@ -28,9 +28,12 @@ export function createWebAuthRoute({
       : "";
 
     const connectionKind = resolveConnectionKind(c, getConnectionKind);
+    // /api/web-auth/login 是 PUBLIC 端点，允许用任何 token 尝试登录；
+    // 使用 "local" 作为 connectionKind 以允许 loopback token 在 LAN/remote 下也能登录
+    const loginConnectionKind = "local";
     const principal = credential
       ? authService.authenticateToken(credential, {
-        connectionKind,
+        connectionKind: loginConnectionKind,
         now: now(),
       })
       : authenticatePasswordLogin(c, {

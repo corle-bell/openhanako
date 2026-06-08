@@ -28,6 +28,7 @@ declare global {
     __HANA_WEB_CONFIG__?: {
       serverPort?: string | number;
       apiBaseUrl?: string;
+      token?: string;
     };
 
     // ── 主题（由 lib/theme.js IIFE bundle 注入） ──

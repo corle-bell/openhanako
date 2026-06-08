@@ -16,19 +16,19 @@ import { guessMime } from "../http/file-content.js";
 const WEB_INDEX_HTML = "index.html";
 const PLACEHOLDER = "__HANA_API_BASE_URL__";
 
-export function createWebStaticRoute({ distDir } = {}) {
+export function createWebStaticRoute({ distDir, serverToken } = {}) {
   if (!distDir) throw new Error("distDir required");
   const route = new Hono();
 
-  route.get("/web", (c) => serveWebIndex(c, distDir));
-  route.get("/web/", (c) => serveWebIndex(c, distDir));
+  route.get("/web", (c) => serveWebIndex(c, distDir, serverToken));
+  route.get("/web/", (c) => serveWebIndex(c, distDir, serverToken));
   route.get("/web/*", (c) => {
     const pattern = new RegExp(`^/web/?`);
     const subPath = c.req.path.replace(pattern, "");
     // 尝试匹配静态文件，失败时 fallback 到 index.html（SPA）
     const result = serveWebStaticFile(c, distDir, subPath);
     if (result) return result;
-    return serveWebIndex(c, distDir);
+    return serveWebIndex(c, distDir, serverToken);
   });
 
   return route;
@@ -37,7 +37,7 @@ export function createWebStaticRoute({ distDir } = {}) {
 /**
  * 返回 index.html，并动态替换 __HANA_API_BASE_URL__ 占位符
  */
-function serveWebIndex(c, distDir) {
+function serveWebIndex(c, distDir, serverToken) {
   const filePath = path.join(distDir, WEB_INDEX_HTML);
   const safePath = resolveExistingInside(distDir, filePath);
   if (!safePath) return c.body("Not Found", 404);
@@ -51,6 +51,12 @@ function serveWebIndex(c, distDir) {
 
   // 替换占位符
   html = html.replace(new RegExp(escapeRegExp(PLACEHOLDER), "g"), apiBaseUrl);
+
+  // 注入 __HANA_WEB_CONFIG__（包含 token，使前端可自动认证）
+  if (serverToken) {
+    const configScript = `<script>window.__HANA_WEB_CONFIG__={apiBaseUrl:${JSON.stringify(apiBaseUrl)},token:${JSON.stringify(serverToken)}};</script>`;
+    html = html.replace("</head>", `${configScript}\n</head>`);
+  }
 
   c.header("Content-Type", "text/html; charset=utf-8");
   c.header("Cache-Control", "no-cache");

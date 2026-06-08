@@ -62,20 +62,52 @@ export function createServerAuthService({
 
     if (parsed.token === loopbackToken) {
       if (connectionKind !== "local") {
-        return denyAuth("loopback_token_requires_local_transport", {
-          credentialSource: parsed.source,
-          connectionKind,
-        });
+        // Loopback token 在非本地连接时不可用，fallback 到 cookie
+        const webPrincipal = authenticateWebSession(hanakoHome, cookieHeader, { now });
+        if (!webPrincipal) {
+          return denyAuth("loopback_token_requires_local_transport", {
+            credentialSource: parsed.source,
+            connectionKind,
+          });
+        }
+        if (!principalAllowsConnection(webPrincipal, connectionKind)) {
+          return denyAuth("connection_not_allowed", {
+            credentialSource: "cookie",
+            connectionKind,
+          });
+        }
+        return allowAuth(normalizePrincipal({
+          ...webPrincipal,
+          connectionKind: connectionKind === "local"
+            ? (webPrincipal.connectionKind || connectionKind)
+            : connectionKind,
+        }));
       }
       return allowAuth(createLocalPrincipal(resolveRuntimeContext()));
     }
 
     const devicePrincipal = authenticateDeviceCredential(hanakoHome, parsed.token, { now });
     if (!devicePrincipal) {
-      return denyAuth("invalid_credential", {
-        credentialSource: parsed.source,
-        connectionKind,
-      });
+      // Device credential 无效时，fallback 到 cookie
+      const webPrincipal = authenticateWebSession(hanakoHome, cookieHeader, { now });
+      if (!webPrincipal) {
+        return denyAuth("invalid_credential", {
+          credentialSource: parsed.source,
+          connectionKind,
+        });
+      }
+      if (!principalAllowsConnection(webPrincipal, connectionKind)) {
+        return denyAuth("connection_not_allowed", {
+          credentialSource: "cookie",
+          connectionKind,
+        });
+      }
+      return allowAuth(normalizePrincipal({
+        ...webPrincipal,
+        connectionKind: connectionKind === "local"
+          ? (webPrincipal.connectionKind || connectionKind)
+          : connectionKind,
+      }));
     }
     if (!principalAllowsConnection(devicePrincipal, connectionKind)) {
       return denyAuth("connection_not_allowed", {
@@ -135,7 +167,8 @@ function createLocalPrincipal(runtimeContext) {
 
 function principalAllowsConnection(principal, connectionKind) {
   if (!principal) return false;
-  if (principal.kind === "local_user") return connectionKind === "local";
+  // local_user 允许 local 和 lan 连接（通过 web-auth/login 获取 session 后可跨网络使用）
+  if (principal.kind === "local_user") return connectionKind === "local" || connectionKind === "lan";
   if (principal.kind !== "device") return true;
   if (connectionKind === "local") return true;
   if (principal.trustState === "tunnel") return connectionKind === "custom_remote";

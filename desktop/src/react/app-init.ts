@@ -312,7 +312,12 @@ async function loadIdentityForActiveConnection(connection: ServerConnection): Pr
 }
 
 async function refreshDeviceWebSession(connection: ServerConnection): Promise<void> {
-  if (connection.credentialKind !== 'device_credential' || !connection.token) return;
+  // loopback_token 或 device_credential 都自动登录获取 cookie session
+  const shouldRefresh = connection.token && (
+    connection.credentialKind === 'device_credential' ||
+    connection.credentialKind === 'loopback_token'
+  );
+  if (!shouldRefresh) return;
   await hanaFetch('/api/web-auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
