@@ -83,7 +83,8 @@ COPY desktop/src/shared/ ./desktop/src/shared/
 COPY desktop/src/locales/ ./desktop/src/locales/
 
 # 从构建阶段复制 Web 前端产物
-COPY --from=web-builder /app/dist-web/ ./dist-web/
+# vite root=desktop/src + outDir=../dist-web → 实际输出到 /app/desktop/dist-web
+COPY --from=web-builder /app/desktop/dist-web/ ./dist-web/
 
 # 复制启动脚本
 COPY docker/entrypoint.sh /entrypoint.sh
