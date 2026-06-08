@@ -120,7 +120,16 @@ export async function initApp(): Promise<void> {
   // Web 环境：使用当前页面的 origin 作为 baseUrl，而非 127.0.0.1
   const isWeb = !window.hana;
   const webBaseUrl = isWeb ? window.location.origin : undefined;
-  const localServerConnection = createLocalServerConnection({ serverPort, serverToken, baseUrl: webBaseUrl });
+  let localServerConnection = createLocalServerConnection({ serverPort, serverToken, baseUrl: webBaseUrl });
+  // Web 环境：强制确保 baseUrl/wsUrl 与浏览器地址一致，避免反向代理 Host 头错误导致连接地址不对
+  if (isWeb && localServerConnection) {
+    const origin = window.location.origin;
+    localServerConnection = {
+      ...localServerConnection,
+      baseUrl: origin,
+      wsUrl: `${origin.replace(/^http/, 'ws')}/ws`,
+    };
+  }
   const persistedConnections = readPersistedServerConnectionState();
   const initialRegistry = localServerConnection
     ? upsertServerConnection(persistedConnections.serverConnections, localServerConnection)
