@@ -192,7 +192,14 @@ export function createLocalServerConnection({
   const port = normalizePort(serverPort);
   if (!port && !baseUrl) return null;
 
-  const effectiveBaseUrl = baseUrl || `http://127.0.0.1:${port}`;
+  // Web 环境：baseUrl 未传时，从 window.location.origin 推断，避免 fallback 到 127.0.0.1
+  let effectiveBaseUrl = baseUrl;
+  if (!effectiveBaseUrl && typeof window !== 'undefined' && !window.hana) {
+    effectiveBaseUrl = window.location.origin;
+  }
+  if (!effectiveBaseUrl) {
+    effectiveBaseUrl = `http://127.0.0.1:${port}`;
+  }
   const parsed = new URL(effectiveBaseUrl);
   const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
   const effectiveWsUrl = `${wsProtocol}//${parsed.host}`;
@@ -224,13 +231,15 @@ export function createLocalServerConnection({
 export function createBrowserServerConnection({
   identity,
   principal,
-  origin = typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1',
+  origin,
 }: {
   identity: ServerIdentity;
   principal?: BrowserServerConnectionPrincipal | null;
   origin?: string;
 }): ServerConnection {
-  const base = trimTrailingSlash(origin);
+  // origin 未传时，Web 环境从 window.location.origin 推断
+  const resolvedOrigin = origin || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1');
+  const base = trimTrailingSlash(resolvedOrigin);
   const parsed = new URL(base);
   const wsProtocol = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${wsProtocol}//${parsed.host}`;
@@ -518,9 +527,13 @@ export function resolveServerConnection(source: ServerConnectionSource): ServerC
     if (registryConnection) return registryConnection;
   }
   if (source.activeServerConnection) return source.activeServerConnection;
+  // Web 环境：从 window.location.origin 推断 baseUrl，避免 fallback 到 127.0.0.1
+  const isWeb = typeof window !== 'undefined' && !window.hana;
+  const webBaseUrl = isWeb ? window.location.origin : undefined;
   return createLocalServerConnection({
     serverPort: source.serverPort,
     serverToken: source.serverToken,
+    baseUrl: webBaseUrl,
   });
 }
 

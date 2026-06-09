@@ -97,12 +97,16 @@ export async function initApp(): Promise<void> {
     const serverPort = String(data.port);
     const serverToken = data.token ?? storeState.serverToken ?? null;
     const activeBeforeRestart = storeState.activeServerConnection;
+    // Web 环境：始终传入当前页面 origin 作为 baseUrl，避免 fallback 到 127.0.0.1
+    const isWeb = !window.hana;
+    const webBaseUrl = isWeb ? window.location.origin : undefined;
     const nextConnectionState = refreshLocalServerConnectionState({
       serverConnections: storeState.serverConnections,
       activeServerConnectionId: storeState.activeServerConnectionId,
       activeServerConnection: storeState.activeServerConnection,
       serverPort,
       serverToken,
+      baseUrl: webBaseUrl,
     });
     useStore.setState({
       serverPort,
@@ -121,13 +125,14 @@ export async function initApp(): Promise<void> {
   const isWeb = !window.hana;
   const webBaseUrl = isWeb ? window.location.origin : undefined;
   let localServerConnection = createLocalServerConnection({ serverPort, serverToken, baseUrl: webBaseUrl });
-  // Web 环境：强制确保 baseUrl/wsUrl 与浏览器地址一致，避免反向代理 Host 头错误导致连接地址不对
+  // Web 环境：强制确保 baseUrl 与浏览器地址一致（wsUrl 由 createLocalServerConnection 正确构造，无需手动拼接 /ws）
   if (isWeb && localServerConnection) {
     const origin = window.location.origin;
+    const wsProtocol = origin.startsWith('https') ? 'wss:' : 'ws:';
     localServerConnection = {
       ...localServerConnection,
       baseUrl: origin,
-      wsUrl: `${origin.replace(/^http/, 'ws')}/ws`,
+      wsUrl: `${wsProtocol}//${new URL(origin).host}`,
     };
   }
   const persistedConnections = readPersistedServerConnectionState();
