@@ -7,12 +7,14 @@ services:
       dockerfile: docker/Dockerfile
     container_name: hanako
     ports:
-      - "14500:14500"
+      # 容器内部 14500 → 宿主机 10683（与 Nginx 监听端口一致）
+      - "10683:14500"
     volumes:
       # 持久化数据（数据库、配置、会话、插件等）
       - hanako_data:/data
-      # 可选：挂载本地目录供 Agent 访问文件
-      # - /path/to/your/files:/workspace:ro
+      # 挂载本地工作目录到容器内 /workspace，供 Agent 访问文件
+      # 修改为你的实际工作目录路径
+      - /root/Desktop/OH-WorkSpace:/workspace:ro
     environment:
       - HANA_PORT=14500
       - HANA_HOST=0.0.0.0
